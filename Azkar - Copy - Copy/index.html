@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#052e16">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="أذكاري وصلاتي">
+    <meta name="description"
+        content="أذكار المسلم اليومية مع مواقيت الصلاة لجميع مدن العالم — حساب محلي دقيق بدون إنترنت">
+    <title>أذكاري وصلاتي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <!-- LOCAL FALLBACK — always loaded first, guarantees offline works perfectly -->
+    <link rel="stylesheet" href="tailwind-fallback.css">
+    <!-- Tailwind CDN overrides fallback when online -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="adhan.min.js"></script>
+    <style>
+        :root {
+            --forest: #052e16;
+            --emerald: #065f46;
+            --mid: #059669;
+            --light: #10b981;
+            --sage: #d1fae5;
+            --cream: #fafaf8;
+            --gold: #b45309;
+            --gold-lt: #fef3c7;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bot: env(safe-area-inset-bottom, 0px);
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Tajawal', 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+            background-color: var(--cream);
+            color: #1c1917;
+            min-height: 100vh;
+            padding-bottom: calc(88px + var(--safe-bot));
+            background-image: radial-gradient(ellipse at 0% 0%, rgba(16, 185, 129, .05) 0%, transparent 55%), radial-gradient(ellipse at 100% 100%, rgba(5, 150, 105, .04) 0%, transparent 55%)
+        }
+
+        .quran-text {
+            font-family: 'Amiri', 'Traditional Arabic', 'Scheherazade', serif;
+            line-height: 2.6;
+            font-size: 1.2rem;
+            color: var(--emerald)
+        }
+
+        .active-tab {
+            background: var(--emerald) !important;
+            color: #fff !important;
+            border-color: transparent !important;
+            box-shadow: 0 2px 10px rgba(6, 95, 70, .22)
+        }
+
+        /* Elegant tab transition */
+        .tab-btn {
+            transition: background .18s ease, color .18s ease, box-shadow .18s ease, border-color .18s ease;
+        }
+
+        .azkar-card {
+            transition: transform .2s ease, box-shadow .2s ease;
+            border-bottom: 2.5px solid transparent
+        }
+
+        .azkar-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .07);
+            border-bottom-color: var(--light)
+        }
+
+        .count-btn:active {
+            transform: scale(.97)
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 3px
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px
+        }
+
+        .loader {
+            border: 3px solid #e5e7eb;
+            border-top-color: var(--mid);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin .9s linear infinite
+        }
+
+        .loader-sm {
+            border: 2px solid #e5e7eb;
+            border-top-color: var(--mid);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin .8s linear infinite;
+            display: inline-block
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .modal {
+            transition: opacity .26s ease, transform .26s cubic-bezier(.34, 1.56, .64, 1);
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(.92)
+        }
+
+        .modal.active {
+            pointer-events: auto;
+            opacity: 1;
+            transform: scale(1)
+        }
+
+        /* Prevent the browser from adjusting window.scrollY when the sticky
+           header shrinks on banner collapse. Scroll anchoring is the root
+           cause of the collapse ↔ expand loop on mobile. */
+        header {
+            overflow-anchor: none;
+        }
+
+        #prayer-banner {
+            background: linear-gradient(145deg, #0a1628 0%, #052e16 55%, #064e3b 100%);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+            overflow-anchor: none;
+            /* Smooth ease-out only — no spring overshoot which was causing the
+               brief sharp-rectangle flash when expanding */
+            transition:
+                border-radius .4s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow .4s ease,
+                margin-bottom .4s ease;
+            will-change: border-radius;
+        }
+
+        #prayer-banner.is-collapsed {
+            border-radius: 3rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .10);
+            margin-bottom: 0;
+        }
+
+        /* is-expanded: no animation — the CSS transition handles it cleanly */
+        #prayer-banner.is-expanded {}
+
+        #banner-compact-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 46px
+        }
+
+        .banner-grabber {
+            width: 32px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, .15);
+            margin: 0 auto 2px;
+            transition: background .3s;
+        }
+
+        #prayer-banner:hover .banner-grabber,
+        #prayer-banner.is-collapsed .banner-grabber {
+            background: rgba(255, 255, 255, .3);
+        }
+
+        #banner-body {
+            overflow: hidden;
+            max-height: 480px;
+            opacity: 1;
+            padding: 0 14px 14px;
+            transition:
+                max-height .5s cubic-bezier(.34, 1.2, .64, 1),
+                opacity .38s ease,
+                padding .38s ease,
+                transform .45s cubic-bezier(.34, 1.2, .64, 1);
+            transform: translateY(0);
+            will-change: max-height, opacity, transform;
+        }
+
+        #prayer-banner.is-collapsed #banner-body {
+            max-height: 0;
+            opacity: 0;
+            padding: 0 14px;
+            pointer-events: none;
+            transform: translateY(-10px)
+        }
+
+        #banner-toggle-icon {
+            transition: transform .4s cubic-bezier(.4, 0, .2, 1);
+            color: rgba(255, 255, 255, .4);
+            font-size: 10px
+        }
+
+        #prayer-banner.is-collapsed #banner-toggle-icon {
+            transform: rotate(180deg)
+        }
+
+        .prayer-item {
+            transition: all .2s ease;
+            opacity: .5
+        }
+
+        .prayer-item.active-prayer {
+            opacity: 1
+        }
+
+        .sunan-box {
+            background: rgba(255, 255, 255, .05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, .09)
+        }
+
+        .prayer-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            transition: all .25s ease;
+            border: 1.5px solid rgba(255, 255, 255, .18)
+        }
+
+        .prayer-dot.done {
+            background: #10b981;
+            border-color: #10b981;
+            box-shadow: 0 0 5px #10b98199
+        }
+
+        .prayer-dot.missed {
+            background: #f43f5e;
+            border-color: #f43f5e;
+            box-shadow: 0 0 5px #f43f5e99
+        }
+
+        .prayer-dot.pending {
+            background: rgba(255, 255, 255, .13)
+        }
+
+        .prayer-dot.upcoming {
+            background: rgba(255, 255, 255, .04);
+            border-color: rgba(255, 255, 255, .07)
+        }
+
+        .prayer-row {
+            transition: background .12s
+        }
+
+        .prayer-row:hover {
+            background: #f0fdf4
+        }
+
+        .prayer-status-pill {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            font-weight: 700
+        }
+
+        .pill-done {
+            background: #d1fae5;
+            color: #065f46
+        }
+
+        .pill-missed {
+            background: #ffe4e6;
+            color: #be123c
+        }
+
+        .pill-pending {
+            background: #f1f5f9;
+            color: #64748b
+        }
+
+        .streak-badge {
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            border-radius: 9999px;
+            color: white;
+            font-weight: 800;
+            font-size: 10px;
+            padding: 2px 7px
+        }
+
+        .hdr-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            transition: all .18s ease;
+            cursor: pointer;
+            font-size: 12px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06)
+        }
+
+        .hdr-btn:hover {
+            background: #f0fdf4;
+            border-color: #a7f3d0;
+            color: var(--emerald)
+        }
+
+        .hdr-btn.active-install {
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(245, 158, 11, .35)
+        }
+
+        .city-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            height: 30px;
+            padding: 0 9px;
+            border-radius: 9px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            font-size: 11px;
+            font-weight: 700;
+            color: #374151;
+            transition: all .18s ease;
+            cursor: pointer;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+            max-width: 100px
+        }
+
+        .city-btn:hover {
+            background: #f0fdf4;
+            border-color: #a7f3d0
+        }
+
+        #offline-banner {
+            display: none;
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            color: white;
+            text-align: center;
+            font-size: 11px;
+            padding: 6px 12px;
+            font-weight: 600
+        }
+
+        body.offline #offline-banner {
+            display: block
+        }
+
+        .sadaqa-text {
+            font-size: 10px;
+            color: #94a3b8;
+            text-align: center;
+            font-family: 'Amiri', serif
+        }
+
+        header {
+            padding-top: calc(8px + var(--safe-top))
+        }
+
+        #toast {
+            position: fixed;
+            bottom: calc(84px + var(--safe-bot));
+            left: 50%;
+            transform: translateX(-50%) translateY(14px);
+            background: #1e293b;
+            color: white;
+            padding: 9px 18px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all .28s ease;
+            z-index: 999;
+            white-space: nowrap;
+            pointer-events: none
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0)
+        }
+
+        #cache-modal-inner {
+            animation: slideUp .28s cubic-bezier(.34, 1.56, .64, 1)
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(24px);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, var(--emerald), var(--light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: -1;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M20 0L40 20L20 40L0 20Z' fill='none' stroke='%2310b981' stroke-opacity='0.04' stroke-width='1'/%3E%3C/svg%3E")
+        }
+
+        header {
+            position: relative
+        }
+
+        .fadl-box {
+            background: linear-gradient(135deg, #fef3c7, #fffbeb);
+            border: 1px solid #fde68a;
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #92400e;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px
+        }
+
+        .fadl-box i {
+            color: #f59e0b;
+            margin-top: 2px;
+            flex-shrink: 0
+        }
+
+        .method-select {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-family: 'Tajawal', sans-serif;
+            color: #374151;
+            width: 100%;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%239ca3af' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center
+        }
+
+        .method-select:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .1)
+        }
+
+        /* ═══ FONT AWESOME OFFLINE FALLBACK ═══
+           If FA CDN is not cached, replace icon classes with unicode chars */
+        @font-face {
+            font-family: 'Tajawal';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1nzSBC45I.woff2') format('woff2');
+        }
+
+        /* Guard: if FA webfonts missing, show text fallbacks */
+        .offline .fas.fa-wifi-slash::before {
+            content: '✗';
+        }
+
+        .offline .fas.fa-location-dot::before,
+        .offline .fas.fa-location-crosshairs::before {
+            content: '📍';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-download::before {
+            content: '⬇';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-sliders::before {
+            content: '⚙';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-mosque::before {
+            content: '🕌';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-times::before {
+            content: '✕';
+        }
+
+        .offline .fas.fa-chevron-left::before {
+            content: '‹';
+            font-weight: bold;
+        }
+
+        .offline .fas.fa-chevron-up::before {
+            content: '∧';
+        }
+
+        .offline .fas.fa-search::before {
+            content: '🔍';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-spinner::before {
+            content: '↻';
+        }
+
+        .offline .far.fa-calendar-alt::before {
+            content: '📅';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-chart-bar::before {
+            content: '📊';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-star::before {
+            content: '★';
+        }
+
+        .offline .fas.fa-check-circle::before {
+            content: '✓';
+        }
+
+        .offline .fas.fa-fingerprint::before {
+            content: '◎';
+        }
+
+        .offline .fas.fa-clock-rotate-left::before {
+            content: '↺';
+        }
+
+        .offline .fas.fa-pray::before {
+            content: '🤲';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-circle-check::before {
+            content: '✅';
+            font-family: emoji;
+        }
+
+        .offline .fas.fa-calculator::before {
+            content: '🧮';
+            font-family: emoji;
+        }
+        .native-settings-card {
+            border: 1px solid rgba(16, 185, 129, .18);
+            border-radius: 1.25rem;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at top right, rgba(16, 185, 129, .12), transparent 38%),
+                linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+        }
+
+        .native-settings-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: .75rem;
+        }
+
+        .native-settings-head h4 {
+            margin: 0;
+            font-size: .95rem;
+            font-weight: 800;
+            color: #065f46;
+        }
+
+        .native-settings-head p {
+            margin: .25rem 0 0;
+            font-size: .72rem;
+            line-height: 1.6;
+            color: #4b5563;
+        }
+
+        .native-status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: .35rem .7rem;
+            font-size: .68rem;
+            font-weight: 800;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+
+        .native-status-pill.ok {
+            background: rgba(16, 185, 129, .12);
+            color: #047857;
+            border-color: rgba(16, 185, 129, .2);
+        }
+
+        .native-status-pill.warn {
+            background: rgba(245, 158, 11, .12);
+            color: #b45309;
+            border-color: rgba(245, 158, 11, .2);
+        }
+
+        .native-toggle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .65rem;
+            margin-top: 1rem;
+        }
+
+        .native-toggle {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .8rem .85rem;
+            border-radius: 1rem;
+            background: rgba(255, 255, 255, .84);
+            border: 1px solid rgba(209, 250, 229, .95);
+            color: #065f46;
+            font-size: .74rem;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(5, 150, 105, .04);
+        }
+
+        .native-toggle input {
+            width: 1rem;
+            height: 1rem;
+            accent-color: #059669;
+            flex-shrink: 0;
+        }
+
+        .native-field {
+            margin-top: .95rem;
+        }
+
+        .native-field label {
+            display: block;
+            margin-bottom: .45rem;
+            font-size: .75rem;
+            font-weight: 800;
+            color: #374151;
+        }
+
+        .native-select {
+            width: 100%;
+            border-radius: 1rem;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #1f2937;
+            padding: .85rem 1rem;
+            font: inherit;
+        }
+
+        .native-permission-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            margin-top: .8rem;
+            padding-top: .8rem;
+            border-top: 1px dashed rgba(16, 185, 129, .18);
+        }
+
+        .native-permission-copy {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .native-permission-copy strong {
+            display: block;
+            font-size: .76rem;
+            color: #111827;
+            margin-bottom: .2rem;
+        }
+
+        .native-permission-copy span {
+            display: block;
+            font-size: .68rem;
+            line-height: 1.5;
+            color: #6b7280;
+        }
+
+        .native-action-btn {
+            border: 0;
+            border-radius: .95rem;
+            background: #065f46;
+            color: #fff;
+            padding: .72rem .95rem;
+            font: inherit;
+            font-size: .72rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .native-action-btn.secondary {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid rgba(16, 185, 129, .16);
+        }
+
+        .native-help {
+            margin-top: .75rem;
+            font-size: .69rem;
+            line-height: 1.65;
+            color: #6b7280;
+        }
+
+        .native-sync-note {
+            margin-top: .8rem;
+            padding: .8rem .9rem;
+            border-radius: 1rem;
+            background: rgba(5, 95, 70, .06);
+            color: #065f46;
+            font-size: .72rem;
+            line-height: 1.65;
+            font-weight: 700;
+        }
+
+        @media (max-width: 640px) {
+            .native-toggle-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .native-permission-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col selection:bg-emerald-100">
+
+    <div id="offline-banner"><i class="fas fa-wifi-slash ml-1"></i> وضع عدم الاتصال — التطبيق يعمل بالكامل</div>
+    <div id="toast"></div>
+
+    <!-- HEADER -->
+    <header class="bg-white/96 backdrop-blur-md shadow-sm sticky top-0 z-40 border-b border-gray-100/70">
+        <div class="max-w-2xl mx-auto px-4 pt-2 pb-1.5">
+            <div class="flex justify-between items-center gap-2 mb-3">
+                <div class="min-w-0 flex-1">
+                    <h1 class="text-lg font-extrabold flex items-center gap-2 leading-none">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-xl overflow-hidden shadow-sm"
+                            style="background:linear-gradient(145deg,#052e16,#065f46);">
+                            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+                                class="w-full h-full p-1">
+                                <path
+                                    d="M16 4C13 4 11 6 11 8.5V11H9.5L8 13H4V27H28V13H24L22.5 11H21V8.5C21 6 19 4 16 4Z"
+                                    fill="rgba(255,255,255,0.12)" />
+                                <ellipse cx="16" cy="10" rx="5" ry="5" fill="rgba(255,255,255,0.9)" />
+                                <rect x="5" y="14" width="3.5" height="10" rx="1" fill="rgba(255,255,255,0.7)" />
+                                <ellipse cx="6.75" cy="13.5" rx="2" ry="2" fill="rgba(255,255,255,0.85)" />
+                                <rect x="23.5" y="14" width="3.5" height="10" rx="1" fill="rgba(255,255,255,0.7)" />
+                                <ellipse cx="25.25" cy="13.5" rx="2" ry="2" fill="rgba(255,255,255,0.85)" />
+                                <rect x="8" y="17" width="16" height="10" rx="1.5" fill="rgba(255,255,255,0.85)" />
+                                <path d="M14 27V22C14 20.9 14.9 20 16 20C17.1 20 18 20.9 18 22V27Z"
+                                    fill="rgba(6,95,70,0.5)" />
+                                <rect x="10" y="19" width="2.5" height="2.5" rx=".8" fill="rgba(6,95,70,0.35)" />
+                                <rect x="19.5" y="19" width="2.5" height="2.5" rx=".8" fill="rgba(6,95,70,0.35)" />
+                                <path
+                                    d="M16 6.5C14.5 6.5 13.5 7.8 13.5 9C14.5 8.5 15.8 8.5 16.8 9.2C16 7.8 16 6.5 16 6.5Z"
+                                    fill="#f59e0b" />
+                                <polygon
+                                    points="17.5,5.5 17.8,6.4 18.7,6.4 18,7 18.3,7.9 17.5,7.3 16.7,7.9 17,7 16.3,6.4 17.2,6.4"
+                                    fill="#f59e0b" />
+                            </svg>
+                        </span>
+                        <span class="text-gradient">أذكاري وصلاتي</span>
+                    </h1>
+                    <p class="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 mr-10">
+                        <i class="far fa-calendar-alt text-[9px]"></i>
+                        <span id="hijri-date">جاري التحميل...</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <button id="install-btn" onclick="triggerInstall()" class="hdr-btn active-install hidden"
+                        title="تثبيت التطبيق"><i class="fas fa-download text-xs"></i></button>
+                    <button onclick="openSettingsModal()" class="hdr-btn" title="طريقة الحساب"><i
+                            class="fas fa-sliders text-xs"></i></button>
+                    <button onclick="toggleQadaModal(true)" class="hdr-btn relative" title="تتبع القضاء">
+                        <i class="fas fa-mosque text-xs text-rose-500"></i>
+                        <span id="qada-badge"
+                            class="absolute -top-1 -left-1 bg-rose-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+                    </button>
+                    <button onclick="toggleModal(true)" class="city-btn" title="تغيير المدينة">
+                        <i class="fas fa-location-dot text-[11px] text-red-400 flex-shrink-0"></i>
+                        <span id="current-city-btn" class="truncate max-w-[72px]">اختر مدينة</span>
+                    </button>
+                </div>
+            </div>
+
+
+
+            <!-- PRAYER BANNER -->
+            <div id="prayer-banner">
+                <div
+                    style="position:absolute;width:180px;height:180px;border-radius:50%;background:rgba(16,185,129,.15);filter:blur(55px);top:-50px;right:-40px;pointer-events:none;">
+                </div>
+                <div
+                    style="position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(59,130,246,.12);filter:blur(45px);bottom:-30px;left:-20px;pointer-events:none;">
+                </div>
+                <div class="banner-grabber"></div>
+                <div id="banner-compact-bar" role="button" aria-expanded="true" aria-label="مواقيت الصلاة">
+                    <div class="flex items-center gap-3 relative z-10 flex-1 min-w-0">
+                        <div>
+                            <div class="text-[9px] text-emerald-400/70 font-semibold leading-none mb-1">المتبقي للصلاة
+                                القادمة</div>
+                            <div class="flex items-baseline gap-2">
+                                <span id="countdown-timer"
+                                    class="text-xl font-mono font-bold tracking-widest tabular-nums text-white ltr"
+                                    dir="ltr">00:00:00</span>
+                                <span class="text-[10px] text-slate-400">← <span id="next-prayer-name-compact"
+                                        class="text-emerald-400 font-bold">--</span></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 mr-1" id="prayer-dots-compact">
+                            <div class="prayer-dot pending" id="dot-fajr" title="الفجر"></div>
+                            <div class="prayer-dot pending" id="dot-dhuhr" title="الظهر"></div>
+                            <div class="prayer-dot pending" id="dot-asr" title="العصر"></div>
+                            <div class="prayer-dot pending" id="dot-maghrib" title="المغرب"></div>
+                            <div class="prayer-dot pending" id="dot-isha" title="العشاء"></div>
+                        </div>
+                    </div>
+                    <div
+                        class="hidden sm:flex items-center gap-2.5 relative z-10 mx-2 text-[10px] text-slate-400 font-mono">
+                        <span id="cs-fajr">--:--</span><span class="opacity-30">·</span>
+                        <span id="cs-dhuhr">--:--</span><span class="opacity-30">·</span>
+                        <span id="cs-asr">--:--</span><span class="opacity-30">·</span>
+                        <span id="cs-maghrib">--:--</span><span class="opacity-30">·</span>
+                        <span id="cs-isha">--:--</span>
+                    </div>
+                    <div
+                        class="relative z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white/10 flex-shrink-0">
+                        <i class="fas fa-chevron-up" id="banner-toggle-icon"></i>
+                    </div>
+                </div>
+                <div id="banner-body">
+                    <div id="sunan-section" class="sunan-box rounded-xl p-2.5 text-center mb-3">
+                        <h4 class="text-[9px] font-bold text-emerald-400/70 mb-1.5 uppercase tracking-wider">السنن
+                            والنوافل للصلاة القادمة</h4>
+                        <div class="flex justify-center items-center gap-5 text-[11px] font-medium">
+                            <div class="flex flex-col items-center gap-0.5"><span
+                                    class="text-slate-500 text-[9px]">قبل</span><span id="sunan-pre"
+                                    class="text-white leading-tight">--</span></div>
+                            <div class="h-4 w-px bg-white/15 flex-shrink-0"></div>
+                            <div class="flex flex-col items-center gap-0.5"><span
+                                    class="text-slate-500 text-[9px]">بعد</span><span id="sunan-post"
+                                    class="text-white leading-tight">--</span></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-5 gap-1.5 text-center mb-2.5">
+                        <div class="prayer-item p-2 rounded-xl" id="pi-fajr"><span
+                                class="block text-[9px] text-slate-400 mb-0.5">الفجر</span><strong
+                                class="text-sm font-semibold text-white" id="t-fajr">--:--</strong>
+                            <div class="mt-1.5 flex justify-center">
+                                <div class="prayer-dot pending" id="gd-fajr"></div>
+                            </div>
+                        </div>
+                        <div class="prayer-item p-2 rounded-xl" id="pi-dhuhr"><span
+                                class="block text-[9px] text-slate-400 mb-0.5">الظهر</span><strong
+                                class="text-sm font-semibold text-white" id="t-dhuhr">--:--</strong>
+                            <div class="mt-1.5 flex justify-center">
+                                <div class="prayer-dot pending" id="gd-dhuhr"></div>
+                            </div>
+                        </div>
+                        <div class="prayer-item p-2 rounded-xl" id="pi-asr"><span
+                                class="block text-[9px] text-slate-400 mb-0.5">العصر</span><strong
+                                class="text-sm font-semibold text-white" id="t-asr">--:--</strong>
+                            <div class="mt-1.5 flex justify-center">
+                                <div class="prayer-dot pending" id="gd-asr"></div>
+                            </div>
+                        </div>
+                        <div class="prayer-item p-2 rounded-xl" id="pi-maghrib"><span
+                                class="block text-[9px] text-slate-400 mb-0.5">المغرب</span><strong
+                                class="text-sm font-semibold text-white" id="t-maghrib">--:--</strong>
+                            <div class="mt-1.5 flex justify-center">
+                                <div class="prayer-dot pending" id="gd-maghrib"></div>
+                            </div>
+                        </div>
+                        <div class="prayer-item p-2 rounded-xl" id="pi-isha"><span
+                                class="block text-[9px] text-slate-400 mb-0.5">العشاء</span><strong
+                                class="text-sm font-semibold text-white" id="t-isha">--:--</strong>
+                            <div class="mt-1.5 flex justify-center">
+                                <div class="prayer-dot pending" id="gd-isha"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between px-1">
+                        <button onclick="openPrayerTracker()"
+                            class="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition"><i
+                                class="fas fa-chart-bar text-[9px]"></i> متابعة الصلوات</button>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-500" id="today-prayer-count">--/5 اليوم</span>
+                            <span class="streak-badge hidden" id="streak-display">🔥 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quran Section Button (merged) -->
+            <div class="mt-1.5 mb-1.5">
+                <button onclick="openQuranModal()"
+                    class="w-full relative overflow-hidden flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 active:scale-[0.98]"
+                    style="background: linear-gradient(135deg, rgba(212,168,83,0.09) 0%, rgba(212,168,83,0.02) 100%); color: #b48530; border: 1px solid rgba(212,168,83,0.25);">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center bg-white/80 shadow-sm border border-orange-50/50"
+                            style="color: #d4a853; font-size: 14px;">📖</div>
+                        <span class="font-extrabold text-[14px]"
+                            style="font-family:'Amiri',serif; color: #9A7B4F;">القرآن الكريم</span>
+                    </div>
+                    <div class="flex items-center gap-1 opacity-70" style="color: #A38A64;">
+                        <span class="text-[9px] tracking-wide font-bold">قراءة واستماع</span>
+                        <i class="fas fa-chevron-left text-[8px] mr-1"></i>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Daily Quran Goal Tracker -->
+            <div id="quran-daily-tracker"
+                class="hidden mb-3 py-2.5 px-4 rounded-2xl text-xs font-medium flex items-center justify-between"
+                style="background: #fff; border: 1px solid rgba(212,168,83,.15); color: #8b7355; box-shadow: 0 4px 14px rgba(212,168,83,.05);">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-[10px] opacity-50"></i>
+                    <span class="opacity-90">وِردك اليومي</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <span id="quran-daily-progress" class="font-bold flex-shrink-0" style="color: #b48530;">0/0</span>
+                    <div class="w-24 h-1.5 rounded-full overflow-hidden" style="background: rgba(212,168,83,.15);">
+                        <div id="quran-daily-bar" class="h-full rounded-full transition-all duration-500"
+                            style="width:0%; background: linear-gradient(90deg, #d4a853, #b48530);"></div>
+                    </div>
+                    <span id="quran-streak-badge" class="hidden flex items-center gap-1 font-bold text-[10px]"
+                        style="color: #b48530;"><i class="fas fa-fire text-[#f97316]"></i> 0</span>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <nav class="flex overflow-x-auto gap-1.5 no-scrollbar py-0.5 pb-0.5">
+                <button onclick="manualSelectTab('morning')"
+                    class="tab-btn flex-shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-bold border border-gray-100/80 bg-white/70 backdrop-blur-md text-gray-500 transition-all hover:bg-white hover:shadow-sm"
+                    id="tab-morning">🌤️ الاستيقاظ والصباح</button>
+                <button onclick="manualSelectTab('evening')"
+                    class="tab-btn flex-shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-bold border border-gray-100/80 bg-white/70 backdrop-blur-md text-gray-500 transition-all hover:bg-white hover:shadow-sm"
+                    id="tab-evening">🌙 المساء</button>
+                <button onclick="manualSelectTab('prayer')"
+                    class="tab-btn flex-shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-bold border border-gray-100/80 bg-white/70 backdrop-blur-md text-gray-500 transition-all hover:bg-white hover:shadow-sm"
+                    id="tab-prayer">🤲 بعد الصلاة</button>
+                <button onclick="manualSelectTab('sleep')"
+                    class="tab-btn flex-shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-bold border border-gray-100/80 bg-white/70 backdrop-blur-md text-gray-500 transition-all hover:bg-white hover:shadow-sm"
+                    id="tab-sleep">💤 النوم والمساء</button>
+                <button onclick="manualSelectTab('friday')" id="tab-friday"
+                    class="tab-btn flex-shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-bold border border-amber-100/80 bg-amber-50/70 backdrop-blur-md text-amber-700 transition-all hover:bg-amber-100 hover:shadow-sm hidden"
+                    style="border-color:rgba(180,83,9,.15);">🕌 يوم الجمعة</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="max-w-2xl mx-auto px-4 pt-2 pb-5 w-full flex-grow">
+        <div id="auto-suggestion-msg"
+            class="hidden mb-2 bg-emerald-50/80 border border-emerald-100 text-emerald-800 px-4 py-1.0 rounded-xl text-xs flex items-center gap-3">
+            <i class="fas fa-clock-rotate-left text-emerald-500 flex-shrink-0"></i>
+            <span id="suggestion-text" class="font-medium text-xs"></span>
+        </div>
+        <div id="extra-reminder-msg"
+            class="hidden mb-3 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-xl text-xs flex items-center gap-2"
+            style="animation: fadeSlideIn .4s ease;">
+            <i class="fas fa-lightbulb text-amber-500 flex-shrink-0"></i>
+            <span class="font-medium"></span>
+        </div>
+        <!-- Friday Surah Al-Kahf Reminder -->
+        <div id="friday-kahf-banner" class="hidden mb-3 rounded-2xl overflow-hidden"
+            style="background: linear-gradient(135deg, #422006 0%, #78350f 60%, #92400e 100%); border: 1px solid rgba(251,191,36,.22); box-shadow: 0 4px 18px rgba(120,53,15,.18); animation: fadeSlideIn .4s ease;">
+            <div class="px-4 py-3 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+                        style="background: rgba(251,191,36,.15);">🕌</div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-extrabold" style="color:#fbbf24; font-family:'Amiri',serif;">يوم الجمعة
+                            المبارك</div>
+                        <div class="text-[10px] mt-0.5 leading-relaxed" style="color:rgba(253,230,138,.75);">
+                            «من قرأ سورة الكهف يوم الجمعة أضاء له النور ما بين الجمعتين»
+                        </div>
+                    </div>
+                </div>
+                <button onclick="openSurahKahf()"
+                    class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-extrabold transition-all active:scale-95"
+                    style="background: rgba(251,191,36,.18); color:#fbbf24; border: 1px solid rgba(251,191,36,.3);">
+                    <span>📖</span><span>اقرأ الكهف</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="azkar-container" class="space-y-3 pb-4"></div>
+        <div id="loader-spinner" class="hidden flex flex-col items-center justify-center py-28">
+            <div class="loader mb-5"></div>
+            <p class="text-gray-400 text-sm">جاري حساب مواقيت الصلاة...</p>
+        </div>
+        <div id="empty-state" class="hidden text-center py-20">
+            <i class="fas fa-mosque text-5xl text-gray-200 mb-4"></i>
+            <p class="text-gray-400 text-sm">اختر مدينتك لعرض المواقيت والأذكار</p>
+        </div>
+        <p class="sadaqa-text mt-8 pb-2">﷽ — صدقة جارية للحاج ماهر كرم وجميع أموات المسلمين رحمهم الله</p>
+    </main>
+
+    <!-- CITY MODAL -->
+    <div id="city-modal"
+        class="modal fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800">تحديد المدينة</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">ابحث عن أي مدينة في العالم</p>
+                </div>
+                <button onclick="toggleModal(false)"
+                    class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div class="p-4 space-y-2.5">
+                <button onclick="detectLocation()"
+                    class="w-full bg-emerald-50 text-emerald-700 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-100 transition flex items-center justify-center gap-2 border border-emerald-100"><i
+                        class="fas fa-location-crosshairs"></i> استخدام موقعي الحالي</button>
+                <div class="relative">
+                    <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                    <input type="text" id="city-search" placeholder="اكتب اسم مدينتك..."
+                        class="w-full pr-10 pl-4 py-2.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none bg-gray-50 focus:bg-white text-sm transition"
+                        onkeyup="handleSearchInput(this)">
+                </div>
+            </div>
+            <div id="cities-list" class="overflow-y-auto p-2 flex-grow custom-scrollbar"></div>
+            <div class="p-3 bg-gray-50 border-t text-center text-[10px] text-gray-400">OpenStreetMap + Adhan.js</div>
+        </div>
+    </div>
+
+    <!-- PRAYER CHECK MODAL -->
+    <div id="prayer-check-modal"
+        class="modal fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm text-center p-6 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+            <div
+                class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-600 text-2xl">
+                <i class="fas fa-pray"></i>
+            </div>
+            <h3 class="font-bold text-lg text-gray-800 mb-1.5">حان وقت الصلاة</h3>
+            <p class="text-gray-500 text-sm mb-1">هل أديت صلاة <span id="check-prayer-name"
+                    class="font-bold text-emerald-600">--</span>؟</p>
+            <p class="text-xs text-gray-400 mb-5" id="check-prayer-time-info"></p>
+            <div class="space-y-2.5">
+                <button onclick="confirmPrayer(true)"
+                    class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-100 text-sm">نعم،
+                    صليتها والحمد لله ✓</button>
+                <button onclick="snoozePrayer()"
+                    class="w-full bg-gray-50 text-gray-400 py-2 rounded-xl text-xs border border-gray-100 hover:bg-gray-100 transition">تذكيري
+                    بعد 30 دقيقة</button>
+            </div>
+            <div id="modal-quran-section"></div>
+        </div>
+    </div>
+
+    <!-- PRAYER TRACKER MODAL -->
+    <div id="prayer-tracker-modal"
+        class="modal fixed inset-0 z-[65] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="p-5 border-b bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-lg">متابعة الصلوات</h3>
+                        <p class="text-emerald-100 text-xs mt-0.5">سجل صلواتك اليومية</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-center">
+                            <div class="text-2xl font-extrabold" id="tracker-streak">0</div>
+                            <div class="text-[9px] text-emerald-200">🔥 يوم متتالي</div>
+                        </div>
+                        <button onclick="closePrayerTracker()"
+                            class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition"><i
+                                class="fas fa-times text-white text-sm"></i></button>
+                    </div>
+                </div>
+                <div class="mt-3 flex gap-1.5" id="weekly-overview"></div>
+            </div>
+            <div class="flex-grow overflow-y-auto custom-scrollbar">
+                <div class="p-4">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">صلوات اليوم</h4>
+                    <div id="tracker-prayers-list" class="space-y-2"></div>
+                </div>
+                <div class="px-4 pb-4">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">آخر 7 أيام</h4>
+                    <div id="tracker-weekly-stats" class="space-y-1.5"></div>
+                </div>
+            </div>
+            <div class="p-3 bg-gray-50 border-t text-center text-xs text-gray-400">تقبّل الله منكم الصلاة والسلام على
+                محمد ﷺ</div>
+        </div>
+    </div>
+
+    <!-- QADA MODAL -->
+    <div id="qada-modal"
+        class="modal fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="p-5 border-b flex justify-between items-center bg-rose-50/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-mosque text-xl text-rose-500"></i></div>
+                    <div>
+                        <h3 class="font-bold text-lg">تتبع القضاء</h3>
+                        <p class="text-xs text-gray-400">حتى يصل العدد إلى صفر</p>
+                    </div>
+                </div>
+                <button onclick="toggleQadaModal(false)"
+                    class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div id="qada-list" class="p-2 max-h-[420px] overflow-y-auto custom-scrollbar"></div>
+            <div class="p-3 bg-gray-50 border-t text-center text-xs text-gray-400">أضف الصلوات المقضية • أنقص عندما
+                تصليها</div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL (Calculation Method) -->
+    <div id="settings-modal"
+        class="modal fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+        <div id="settings-modal-inner" class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="p-5 border-b bg-gradient-to-r from-slate-800 to-emerald-900 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-base flex items-center gap-2"><i
+                                class="fas fa-sliders text-emerald-400 text-sm"></i> إعدادات الحساب</h3>
+                        <p class="text-slate-400 text-xs mt-0.5">Adhan.js — حساب محلي بدون إنترنت</p>
+                    </div>
+                    <button onclick="closeSettingsModal()"
+                        class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition"><i
+                            class="fas fa-times text-white text-sm"></i></button>
+                </div>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2"><i
+                            class="fas fa-calculator text-emerald-500 ml-1"></i> طريقة حساب مواقيت الصلاة</label>
+                    <select id="calc-method-select" class="method-select" onchange="changeCalcMethod(this.value)">
+                        <option value="Egyptian">الهيئة المصرية العامة للمساحة</option>
+                        <option value="UmmAlQura">أم القرى (مكة المكرمة)</option>
+                        <option value="Kuwait">الكويت</option>
+                        <option value="Qatar">قطر</option>
+                        <option value="Dubai">دبي</option>
+                        <option value="MuslimWorldLeague">رابطة العالم الإسلامي</option>
+                        <option value="NorthAmerica">أمريكا الشمالية (ISNA)</option>
+                        <option value="Singapore">سنغافورة</option>
+                        <option value="Turkey">تركيا (ديانت)</option>
+                        <option value="Tehran">طهران</option>
+                        <option value="Karachi">كراتشي</option>
+                    </select>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
+                    <i class="fas fa-circle-check text-emerald-500 mt-0.5 flex-shrink-0 text-sm"></i>
+                    <p class="text-xs text-emerald-700">المواقيت تُحسب مباشرة في جهازك باستخدام
+                        <strong>Adhan.js</strong> — بدون أي اتصال بالإنترنت، دقيقة 100%.
+                    </p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3 flex items-center gap-2 text-xs text-gray-500">
+                    <i class="fas fa-location-dot text-red-400 text-xs"></i>
+                    المدينة: <strong class="text-gray-700" id="settings-city-name">غير محدد</strong>
+                </div>
+                <div id="native-reminder-card" class="native-settings-card hidden">
+                    <div class="native-settings-head">
+                        <div>
+                            <h4>تنبيهات Android</h4>
+                            <p>تعمل حتى عند إغلاق التطبيق بعد اختيار المدينة ومنح أذونات الإشعارات والتنبيهات الدقيقة.</p>
+                        </div>
+                        <span class="native-status-pill ok">Android</span>
+                    </div>
+
+                    <div class="native-toggle-grid">
+                        <label class="native-toggle">
+                            <input id="setting-prayer-notifications" type="checkbox"
+                                onchange="toggleReminderSetting('prayerNotificationsEnabled', this.checked)">
+                            <span>تنبيهات الصلوات</span>
+                        </label>
+                        <label class="native-toggle">
+                            <input id="setting-morning-azkar" type="checkbox"
+                                onchange="toggleReminderSetting('morningAzkarEnabled', this.checked)">
+                            <span>أذكار الصباح</span>
+                        </label>
+                        <label class="native-toggle">
+                            <input id="setting-evening-azkar" type="checkbox"
+                                onchange="toggleReminderSetting('eveningAzkarEnabled', this.checked)">
+                            <span>أذكار المساء</span>
+                        </label>
+                        <label class="native-toggle">
+                            <input id="setting-sleep-azkar" type="checkbox"
+                                onchange="toggleReminderSetting('sleepAzkarEnabled', this.checked)">
+                            <span>أذكار النوم</span>
+                        </label>
+                        <label class="native-toggle">
+                            <input id="setting-friday-kahf" type="checkbox"
+                                onchange="toggleReminderSetting('fridayKahfEnabled', this.checked)">
+                            <span>تذكير الجمعة</span>
+                        </label>
+                    </div>
+
+                    <div class="native-field">
+                        <label for="prayer-reminder-offset">موعد تنبيه الصلاة</label>
+                        <select id="prayer-reminder-offset" class="native-select"
+                            onchange="setPrayerReminderOffset(this.value)">
+                            <option value="0">وقت الصلاة مباشرة</option>
+                            <option value="10">قبل الصلاة بـ 10 دقائق</option>
+                            <option value="15">قبل الصلاة بـ 15 دقيقة</option>
+                            <option value="30">قبل الصلاة بـ 30 دقيقة</option>
+                        </select>
+                    </div>
+
+                    <div class="native-permission-row">
+                        <div class="native-permission-copy">
+                            <strong>إذن الإشعارات</strong>
+                            <span>بدون هذا الإذن لن تظهر تنبيهات الصلاة والأذكار.</span>
+                        </div>
+                        <span id="notif-permission-status" class="native-status-pill warn">غير مفعّل</span>
+                        <button class="native-action-btn" onclick="requestNotificationPermission()">تفعيل</button>
+                    </div>
+
+                    <div class="native-permission-row">
+                        <div class="native-permission-copy">
+                            <strong>دقة الخلفية</strong>
+                            <span>لأفضل دقة في وقت التنبيه افتح إعدادات Android واسمح بالمنبهات الدقيقة.</span>
+                        </div>
+                        <span id="exact-alarm-status" class="native-status-pill warn">تقريبي</span>
+                        <button class="native-action-btn secondary" onclick="requestExactAlarmPermission()">فتح الإعداد</button>
+                    </div>
+
+                    <p class="native-help">إذا بدّلت المدينة أو طريقة الحساب، اضغط مزامنة ليُعاد جدولة كل التنبيهات فورًا.</p>
+                    <button class="native-action-btn secondary" style="width:100%; margin-top:.75rem;"
+                        onclick="requestNativeSync()">مزامنة التنبيهات الآن</button>
+                    <div id="native-sync-summary" class="native-sync-note"></div>
+                </div>
+
+                <div id="browser-reminder-note" class="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs text-slate-500">
+                    الإشعارات الخلفية الكاملة تظهر داخل تطبيق Android. في المتصفح ستظل الوظائف محدودة بإعدادات المتصفح نفسه.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QURAN READER MODAL -->
+    <div id="quran-modal" class="modal fixed inset-0 z-[90] flex items-center justify-center p-0"
+        style="background: rgba(10,15,26,.95); backdrop-filter: blur(12px);">
+        <div class="w-full h-full max-w-2xl mx-auto flex flex-col overflow-hidden"
+            style="background: linear-gradient(180deg, #0d1117 0%, #1a1207 30%, #0d1117 100%);">
+            <!-- Header -->
+            <div class="flex justify-between items-center px-4 py-3"
+                style="border-bottom: 1px solid rgba(212,168,83,.12); background: rgba(26,18,7,.8);">
+                <h3 class="font-bold text-base flex items-center gap-2"
+                    style="color:#d4a853; font-family:'Amiri',serif; text-shadow: 0 0 10px rgba(212,168,83,.25);">
+                    📖 القرآن الكريم
+                </h3>
+                <button onclick="closeQuranModal()"
+                    class="w-8 h-8 rounded-full flex items-center justify-center transition"
+                    style="background:rgba(212,168,83,.1);color:#d4a853;">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <!-- Content -->
+            <div id="quran-modal-content" class="flex-grow flex flex-col overflow-hidden"></div>
+        </div>
+    </div>
+
+    <!-- QURAN AUDIO MODAL -->
+    <div id="quran-audio-modal" class="modal fixed inset-0 z-[95] flex items-center justify-center p-0"
+        style="background: rgba(10,15,26,.95); backdrop-filter: blur(12px);">
+        <div class="w-full h-full max-w-2xl mx-auto flex flex-col overflow-hidden"
+            style="background: linear-gradient(180deg, #0d1117 0%, #1a1207 30%, #0d1117 100%);">
+            <div class="flex justify-between items-center px-4 py-3"
+                style="border-bottom: 1px solid rgba(212,168,83,.12); background: rgba(26,18,7,.8);">
+                <h3 class="font-bold text-base flex items-center gap-2"
+                    style="color:#d4a853; font-family:'Amiri',serif; text-shadow: 0 0 10px rgba(212,168,83,.25);">
+                    🎧 استماع القرآن الكريم
+                </h3>
+                <button onclick="closeQuranAudioModal()"
+                    class="w-8 h-8 rounded-full flex items-center justify-center transition"
+                    style="background:rgba(212,168,83,.1);color:#d4a853;">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <div id="quran-audio-content" class="flex-grow flex flex-col overflow-hidden"></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="quran.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
